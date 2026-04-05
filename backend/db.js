@@ -3,8 +3,8 @@ const path = require('path');
 
 const db = new Database(path.join(__dirname, 'leadflow.db'));
 
-// Enable WAL mode for better performance
-db.pragma('journal_mode = WAL');
+// Disable WAL mode for serverless environments
+// db.pragma('journal_mode = WAL');
 
 // Create tables
 db.exec(`
