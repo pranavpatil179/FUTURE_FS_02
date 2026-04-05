@@ -36,7 +36,40 @@ const db = {
       all: (...args) => {
         if (sql.includes('FROM users')) return users;
         if (sql.includes('FROM leads') && sql.includes('notes_count')) {
-          return leads.map(l => ({
+          let filtered = [...leads];
+          
+          // Apply filtering logic based on standard query structure in leads.js
+          const searchIdx = sql.indexOf('LIKE ?');
+          const statusIdx = sql.indexOf('l.status = ?');
+          const sourceIdx = sql.indexOf('l.source = ?');
+          
+          let argIdx = 0;
+          if (searchIdx > -1) {
+            const searchVal = args[0]?.toString().replace(/%/g, '').toLowerCase();
+            filtered = filtered.filter(l => 
+              l.name.toLowerCase().includes(searchVal) || 
+              l.email.toLowerCase().includes(searchVal) || 
+              l.company.toLowerCase().includes(searchVal)
+            );
+            argIdx = 3; // search uses 3 '?' params
+          }
+          
+          if (statusIdx > -1) {
+            const statusVal = args[argIdx];
+            filtered = filtered.filter(l => l.status === statusVal);
+            argIdx++;
+          }
+          
+          if (sourceIdx > -1) {
+            const sourceVal = args[argIdx];
+            filtered = filtered.filter(l => l.source === sourceVal);
+            argIdx++;
+          }
+
+          // Apply sorting (ORDER BY l.created_at DESC)
+          filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+          return filtered.map(l => ({
             ...l,
             notes_count: notes.filter(n => n.lead_id === l.id).length
           }));
